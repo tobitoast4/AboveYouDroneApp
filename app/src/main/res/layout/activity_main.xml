@@ -18,8 +18,10 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/connect_to_drone_loading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/rent_drone_menu"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -51,10 +53,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
-                    android:progressTint="#FF0000"
-                    android:progressTintMode="src_over"
-                    android:secondaryProgressTint="#FF0000"
-                    android:secondaryProgressTintMode="src_atop"
+                    android:indeterminateTint="#000"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -68,6 +67,7 @@
                     android:layout_marginEnd="32dp"
                     android:layout_marginBottom="24dp"
                     android:text="Connecting to drone ..."
+                    android:textColor="#000"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
@@ -124,6 +124,7 @@
                         android:layout_marginEnd="24dp"
                         android:layout_marginBottom="16dp"
                         android:background="@drawable/round_button_dark"
+                        android:onClick="rentDrone"
                         android:text="RENT DRONE"
                         android:textColor="#FFFFFF"
                         android:textSize="24sp"
@@ -141,6 +142,7 @@
                         android:layout_marginEnd="24dp"
                         android:layout_marginBottom="32dp"
                         android:background="@drawable/round_button_light"
+                        android:onClick="reportIssue"
                         android:text="REPORT ISSUE"
                         android:textColor="#000000"
                         android:textSize="16sp"

@@ -10,6 +10,9 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -69,6 +72,29 @@ public class MainActivity extends AppCompatActivity implements
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         enableMyLocation();
+    }
+
+    public void rentDrone(View v){
+        ConstraintLayout connect_to_drone_loading = findViewById(R.id.connect_to_drone_loading);
+        connect_to_drone_loading.setVisibility(View.VISIBLE);
+
+        final Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                connect_to_drone_loading.setVisibility(View.GONE);
+                openDroneInteractionActivity();
+            }
+        }, 2000);
+    }
+
+    private void openDroneInteractionActivity() {
+        Intent intent = new Intent(this, DroneInteractionActivity.class);
+        startActivity(intent);
+    }
+
+    public void reportIssue(View v){
+        Toast.makeText(this, "Not implemented", Toast.LENGTH_SHORT).show();
     }
 
     @Override
