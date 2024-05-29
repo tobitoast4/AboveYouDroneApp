@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements
                 connect_to_drone_loading.setVisibility(View.GONE);
                 openDroneInteractionActivity();
             }
-        }, 2000);
+        }, 1000);
     }
 
     private void openDroneInteractionActivity() {
