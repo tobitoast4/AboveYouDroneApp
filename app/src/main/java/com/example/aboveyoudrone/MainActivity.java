@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -37,7 +38,10 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
 
+import org.json.JSONException;
+
 public class MainActivity extends AppCompatActivity implements
+        GoogleMap.OnMapClickListener,
         GoogleMap.OnMapLongClickListener,
         GoogleMap.OnMyLocationButtonClickListener,
         GoogleMap.OnMarkerClickListener,
@@ -78,14 +82,19 @@ public class MainActivity extends AppCompatActivity implements
         ConstraintLayout connect_to_drone_loading = findViewById(R.id.connect_to_drone_loading);
         connect_to_drone_loading.setVisibility(View.VISIBLE);
 
-        final Handler handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                connect_to_drone_loading.setVisibility(View.GONE);
-                openDroneInteractionActivity();
-            }
-        }, 1000);
+        ServerRequestClient.HttpClient client = new ServerRequestClient.HttpClient();
+        try {
+            client.getStatus();
+            client.setOnServerResponseListener(new ServerRequestClient.HttpClient.OnServerResponseListener() {
+                @Override
+                public void onResponseLoaded(int status) {
+                    connect_to_drone_loading.setVisibility(View.GONE);
+                    openDroneInteractionActivity();
+                }
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     private void openDroneInteractionActivity() {
@@ -101,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements
     public void onMapReady(@NonNull GoogleMap googleMap) {
         map = googleMap;
         map.setOnMyLocationButtonClickListener(this);
+        map.setOnMapClickListener(this);
         map.setOnMapLongClickListener(this);
         map.setOnMarkerClickListener(this);
         map.getUiSettings().setZoomControlsEnabled(false);
@@ -110,10 +120,11 @@ public class MainActivity extends AppCompatActivity implements
         BitmapDrawable bitmapdraw = (BitmapDrawable) ContextCompat.getDrawable(getApplicationContext(), R.drawable.drone);   ;
         Bitmap b = bitmapdraw.getBitmap();
         Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
-        map.addMarker(new MarkerOptions()
+        Marker myMarker = map.addMarker(new MarkerOptions()
                 .position(EXAMPLE_MARKER_1_POSITION)
                 .anchor(0.5f, 0.5f)
                 .icon(BitmapDescriptorFactory.fromBitmap(smallMarker)));
+        myMarker.setTag("this_is_my_id");
         map.addMarker(new MarkerOptions()
                 .position(EXAMPLE_MARKER_2_POSITION)
                 .anchor(0.5f, 0.5f)
@@ -139,6 +150,11 @@ public class MainActivity extends AppCompatActivity implements
                 }
             }
         });
+    }
+
+    @Override
+    public void onMapClick(@NonNull LatLng latLng) {
+        moveDroneMenu(700);
     }
 
     @Override
@@ -209,12 +225,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public boolean onMarkerClick(@NonNull Marker marker) {
-        ConstraintLayout rent_drone_menu = findViewById(R.id.rent_drone_menu);
-        rent_drone_menu.animate()
-                .translationY(-700)
-                .setDuration(500)
-                .start();
-//
+        moveDroneMenu(-700);
 //        Integer clickCount = (Integer) marker.getTag();
 //
 //        // Check if a click count was set, then display the click count.
@@ -227,5 +238,13 @@ public class MainActivity extends AppCompatActivity implements
 //                    Toast.LENGTH_SHORT).show();
 //        }
         return false;
+    }
+
+    private void moveDroneMenu(int distance) {
+        ConstraintLayout rent_drone_menu = findViewById(R.id.rent_drone_menu);
+        rent_drone_menu.animate()
+                .translationY(distance)
+                .setDuration(300)
+                .start();
     }
 }
