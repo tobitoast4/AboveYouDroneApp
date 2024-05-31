@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void openDroneInteractionActivity() {
-        Intent intent = new Intent(this, DroneInteractionActivity.class);
+        Intent intent = new Intent(this, IdentificationActivity.class);
         startActivity(intent);
     }
 

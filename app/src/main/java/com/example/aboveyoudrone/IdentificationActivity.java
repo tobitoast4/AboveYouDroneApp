@@ -1,6 +1,5 @@
 package com.example.aboveyoudrone;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
@@ -10,13 +9,13 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-public class DroneInteractionActivity extends AppCompatActivity {
+public class IdentificationActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_drone_interaction);
+        setContentView(R.layout.activity_identification);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -24,15 +23,11 @@ public class DroneInteractionActivity extends AppCompatActivity {
         });
     }
 
-    public void follow(View v){
+    public void takeSnapshot(View v){
 
     }
 
-    public void stopFollow(View v){
-
-    }
-
-    public void stopRental(View v){
+    public void confirmSnapshot(View v){
 
     }
 }

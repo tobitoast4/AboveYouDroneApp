@@ -1,0 +1,176 @@
+Endpoints:
+/get_drones				-> gibt alle Drohnen zum darstellen auf der Map zurück
+/rent_drone				-> user mietet Drohne
+/get_rental				-> user frägt ab, ob er noch in einer Vermietung ist
+/stop_rental		    -> user beendet Mietung
+/stop_drone_follow		-> user pausiert, dass drohne ihm folgt
+/drone_follow			-> drohne folgt user wieder (nach pausieren)
+/panic_button			-> ALARM button -> wählt theoreitsch notruf mit location ( + videostream) (+ lauter sound aus drohne)
+/take_snapshot			-> sendet Befehl, dass Drohne ein Bild aufnehmen soll. Auf diesem Bild sollte der Mieter zu sehen sein
+/confirm_snapshot		-> Mieter sieht zuvor getätigten Snapshot und bestätigt diesen
+
+
+-------------------------------------------
+GET /get_drones 	(optional param: location of user to only get drones nearby)
+
+ResponseBody: 
+{
+	drones: [
+		{
+			id: <uuid>,
+			battery: <float>
+			(price: <float>)
+			position: {
+				lng: <float>,
+				lat: <float>,
+			}
+		},
+		{
+			id: <uuid>,
+			battery: <float>
+			(price: <float>)
+			position: {
+				lng: <float>,
+				lat: <float>,
+			}
+		}
+	]
+}
+
+-------------------------------------------
+POST /rent_drone
+
+RequestBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>
+}
+
+ResponseBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>,,
+	status: "suceeded" / "failed",
+	timestamp_rental_started: <int> (unix time)
+}
+
+-------------------------------------------
+POST /get_rental 	(this can be queried after app has been closed to show current rental again)
+
+RequestBody: 
+{
+	user_id: <uuid>
+}
+
+ResponseBody: 
+{
+	user_id: <uuid>,
+	drone: {
+		id: <uuid>,
+		battery: <float>,
+		price: <float>
+	}
+	timestamp_rental_started: <int> (unix time)
+}
+
+-------------------------------------------
+POST /stop_rental
+
+RequestBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>
+}
+
+ResponseBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>,
+	status: "rental successfully ended" / "rental could not be ended",
+	timestamp_rental_started: <int> (unix time),
+	timestamp_rental_ended: <int>  (unix time),
+	price_to_pay: <float>  (in euros)
+}
+
+-------------------------------------------
+POST /stop_drone_follow
+
+RequestBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>
+}
+
+ResponseBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>,
+	status: "command to stop drone was sent" / "command could not be sent"
+}
+
+-------------------------------------------
+POST /drone_follow
+
+RequestBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>
+}
+
+ResponseBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>,
+	status: "command to follow again was sent" / "command could not be sent"
+}
+
+-------------------------------------------
+POST /panic_button
+
+RequestBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>
+}
+
+ResponseBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>,
+	status: "command to follow again was sent" / "command could not be sent"
+}
+
+
+-------------------------------------------
+- Idk if we still want to implement this
+-------------------------------------------
+POST /take_snapshot		(takes a snapshot of the running video stream, where renter should be visible -> for identifying the renter afterwards)
+
+RequestBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>
+}
+
+ResponseBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>,
+	image: <ByteStream> / <ImageFile>  (where renter should be present),
+	image_hash: <string>
+}
+
+POST /confirm_snapshot 	(confirms the latest taken snapshot)
+
+RequestBody: 
+{
+	user_id: <uuid>,
+	image_hash: <string> 	(the image hash from before, to ensure that user refers to the same image as the server)
+}
+
+ResponseBody: 
+{
+	user_id: <uuid>,
+	drone_id: <uuid>,
+	status: "success" / "fail"
+}
