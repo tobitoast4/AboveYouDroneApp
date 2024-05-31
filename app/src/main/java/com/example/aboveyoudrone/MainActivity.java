@@ -2,16 +2,14 @@ package com.example.aboveyoudrone;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,8 +35,14 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 
+import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
+
+import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleMap.OnMapClickListener,
@@ -46,11 +50,6 @@ public class MainActivity extends AppCompatActivity implements
         GoogleMap.OnMyLocationButtonClickListener,
         GoogleMap.OnMarkerClickListener,
         OnMapReadyCallback {
-
-    private static final LatLng EXAMPLE_MARKER_1_POSITION = new LatLng(48.142927126652175, 11.510960489692248);
-    private static final LatLng EXAMPLE_MARKER_2_POSITION = new LatLng(48.142379192961805, 11.514043136619645);
-    private static final LatLng EXAMPLE_MARKER_3_POSITION = new LatLng(48.14210680833608, 11.509692400291929);
-
 
     private GoogleMap map;
 
@@ -62,6 +61,8 @@ public class MainActivity extends AppCompatActivity implements
     private boolean permissionDenied = false;
     private FusedLocationProviderClient fusedLocationClient;
 
+    private SharedPreferences sharedPrefs;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,32 +73,46 @@ public class MainActivity extends AppCompatActivity implements
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        sharedPrefs = getSharedPreferences("settings", Context.MODE_PRIVATE);
+        // In the sharedPrefs we want to store:
+        //  current_user_id (String)
+        //  current_drone_id (String)
 
+        if (sharedPrefs.getString("current_user_id", "").equals("")) {
+            sharedPrefs.edit().putString("current_user_id", "myUserId").apply();
+        }
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         enableMyLocation();
     }
 
-    public void rentDrone(View v){
-        ConstraintLayout connect_to_drone_loading = findViewById(R.id.connect_to_drone_loading);
+    public void rentDrone(View v) throws JSONException {
+        ConstraintLayout connect_to_drone_loading = findViewById(R.id.image_loading);
         connect_to_drone_loading.setVisibility(View.VISIBLE);
 
-        ServerRequestClient.HttpClient client = new ServerRequestClient.HttpClient();
-        try {
-            client.getStatus();
-            client.setOnServerResponseListener(new ServerRequestClient.HttpClient.OnServerResponseListener() {
-                @Override
-                public void onResponseLoaded(int status) {
-                    connect_to_drone_loading.setVisibility(View.GONE);
-                    openDroneInteractionActivity();
+        RequestParams params = new RequestParams();
+        params.put("user_id", sharedPrefs.getString("current_user_id", ""));
+        params.put("drone_id", sharedPrefs.getString("current_drone_id", ""));
+        ServerRequestClient.post("/rent_drone", params, new JsonHttpResponseHandler(){
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                try {
+                    String status = response.getString("status");
+                    if (status.equals("success")) {  // open next Activity on success
+                        openIdentificationActivity();
+                    } else {
+                        String message = response.getString("message");
+                        Toast.makeText(MainActivity.this, "Rental failed: " + message, Toast.LENGTH_SHORT).show();
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
-            });
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+                connect_to_drone_loading.setVisibility(View.GONE);
+            }
+        });
     }
 
-    private void openDroneInteractionActivity() {
+    private void openIdentificationActivity() {
         Intent intent = new Intent(this, IdentificationActivity.class);
         startActivity(intent);
     }
@@ -120,19 +135,37 @@ public class MainActivity extends AppCompatActivity implements
         BitmapDrawable bitmapdraw = (BitmapDrawable) ContextCompat.getDrawable(getApplicationContext(), R.drawable.drone);   ;
         Bitmap b = bitmapdraw.getBitmap();
         Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
-        Marker myMarker = map.addMarker(new MarkerOptions()
-                .position(EXAMPLE_MARKER_1_POSITION)
-                .anchor(0.5f, 0.5f)
-                .icon(BitmapDescriptorFactory.fromBitmap(smallMarker)));
-        myMarker.setTag("this_is_my_id");
-        map.addMarker(new MarkerOptions()
-                .position(EXAMPLE_MARKER_2_POSITION)
-                .anchor(0.5f, 0.5f)
-                .icon(BitmapDescriptorFactory.fromBitmap(smallMarker)));
-        map.addMarker(new MarkerOptions()
-                .position(EXAMPLE_MARKER_3_POSITION)
-                .anchor(0.5f, 0.5f)
-                .icon(BitmapDescriptorFactory.fromBitmap(smallMarker)));
+
+        ServerRequestClient.get("/get_drones", null, new JsonHttpResponseHandler(){
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                try {
+                    JSONArray drones = response.getJSONArray("drones");
+                    for (int i = 0; i < drones.length(); i++){
+                        JSONObject droneObject = drones.getJSONObject(i);
+                        String drone_id = droneObject.getString("id");
+                        int battery = droneObject.getInt("battery");
+                        double price = droneObject.getDouble("price");
+                        Drone drone = new Drone(drone_id, battery, price);
+
+                        JSONObject positionObject = droneObject.getJSONObject("position");
+                        double lat = positionObject.getDouble("lat");
+                        double lng = positionObject.getDouble("lng");
+                        LatLng position = new LatLng(lat, lng);
+
+                        Marker myMarker = map.addMarker(new MarkerOptions()
+                                .position(position)
+                                .anchor(0.5f, 0.5f)
+                                .icon(BitmapDescriptorFactory.fromBitmap(smallMarker)));
+                        myMarker.setTag(drone);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                super.onSuccess(statusCode, headers, response);
+            }
+        });
 
         if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -222,21 +255,19 @@ public class MainActivity extends AppCompatActivity implements
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-
+    @SuppressLint("SetTextI18n")
     @Override
     public boolean onMarkerClick(@NonNull Marker marker) {
+        Drone drone = (Drone) marker.getTag();
+        sharedPrefs.edit().putString("current_drone_id", drone.getId()).apply();
+        TextView drone_id_text = findViewById(R.id.drone_id_text);
+        drone_id_text.setText("Drone " + drone.getId());
+        TextView drone_price_text = findViewById(R.id.drone_price_text);
+        drone_price_text.setText("" + drone.getPrice() + "€ /\nMINUTE");
+        TextView drone_battery_level_text = findViewById(R.id.drone_battery_level_text);
+        int minutes = (int) (drone.getBattery() * 1.64);
+        drone_battery_level_text.setText("" + drone.getBattery() + " %\n(" + minutes + " MIN)");
         moveDroneMenu(-700);
-//        Integer clickCount = (Integer) marker.getTag();
-//
-//        // Check if a click count was set, then display the click count.
-//        if (clickCount != null) {
-//            clickCount = clickCount + 1;
-//            marker.setTag(clickCount);
-//            Toast.makeText(this,
-//                    marker.getTitle() +
-//                            " has been clicked ",
-//                    Toast.LENGTH_SHORT).show();
-//        }
         return false;
     }
 

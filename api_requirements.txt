@@ -19,7 +19,7 @@ ResponseBody:
 		{
 			id: <uuid>,
 			battery: <float>
-			(price: <float>)
+			price: <float>
 			position: {
 				lng: <float>,
 				lat: <float>,
@@ -28,7 +28,7 @@ ResponseBody:
 		{
 			id: <uuid>,
 			battery: <float>
-			(price: <float>)
+			price: <float>
 			position: {
 				lng: <float>,
 				lat: <float>,
@@ -65,11 +65,7 @@ RequestBody:
 ResponseBody: 
 {
 	user_id: <uuid>,
-	drone: {
-		id: <uuid>,
-		battery: <float>,
-		price: <float>
-	}
+	drone_id: <uuid>,
 	timestamp_rental_started: <int> (unix time)
 }
 
