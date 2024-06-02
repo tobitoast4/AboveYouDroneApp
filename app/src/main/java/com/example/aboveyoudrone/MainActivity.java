@@ -73,6 +73,7 @@ public class MainActivity extends AppCompatActivity implements
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
         sharedPrefs = getSharedPreferences("settings", Context.MODE_PRIVATE);
         // In the sharedPrefs we want to store:
         //  current_user_id (String)
@@ -87,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     public void rentDrone(View v) throws JSONException {
-        ConstraintLayout connect_to_drone_loading = findViewById(R.id.image_loading);
+        ConstraintLayout connect_to_drone_loading = findViewById(R.id.stopping_rental);
         connect_to_drone_loading.setVisibility(View.VISIBLE);
 
         RequestParams params = new RequestParams();
@@ -130,6 +131,12 @@ public class MainActivity extends AppCompatActivity implements
         map.setOnMarkerClickListener(this);
         map.getUiSettings().setZoomControlsEnabled(false);
 
+        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        map.setMyLocationEnabled(true);
+
         int height = 100;
         int width = 100;
         BitmapDrawable bitmapdraw = (BitmapDrawable) ContextCompat.getDrawable(getApplicationContext(), R.drawable.drone);   ;
@@ -166,12 +173,6 @@ public class MainActivity extends AppCompatActivity implements
                 super.onSuccess(statusCode, headers, response);
             }
         });
-
-        if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        map.setMyLocationEnabled(true);
 
         map.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
             @Override
@@ -217,9 +218,8 @@ public class MainActivity extends AppCompatActivity implements
                         public void onSuccess(Location location) {
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
-                                // Logic to handle location object
-//                                sharedPrefs.edit().putFloat("last_user_location_lng", (float) location.getLongitude()).apply();
-//                                sharedPrefs.edit().putFloat("last_user_location_lat", (float) location.getLatitude()).apply();
+                                LatLng my_pos = new LatLng(location.getLatitude(), location.getLongitude());
+                                map.moveCamera(CameraUpdateFactory.newLatLngZoom(my_pos, 16.0f));
                             }
                         }
                     });
@@ -277,5 +277,31 @@ public class MainActivity extends AppCompatActivity implements
                 .translationY(distance)
                 .setDuration(300)
                 .start();
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        Bundle bundle = intent.getExtras();
+        Toast.makeText(this, "" + bundle, Toast.LENGTH_SHORT).show();
+        if(bundle != null){
+            int timestamp_rental_started = (int) bundle.getDouble("timestamp_rental_started");
+            int timestamp_rental_ended = (int) bundle.getDouble("timestamp_rental_ended");
+            double price_to_pay = bundle.getDouble("price_to_pay");
+
+            int duration = (timestamp_rental_ended - timestamp_rental_started) / 60;
+            TextView after_rent_overlay_duration = findViewById(R.id.after_rent_overlay_duration);
+            after_rent_overlay_duration.setText("" + duration + " min");
+            TextView after_rent_overlay_price = findViewById(R.id.after_rent_overlay_price);
+            after_rent_overlay_price.setText("" + price_to_pay + " €");
+
+            ConstraintLayout after_rent_overlay = findViewById(R.id.after_rent_overlay);
+            after_rent_overlay.setVisibility(View.VISIBLE);
+        }
+        super.onNewIntent(intent);
+    }
+
+    public void closeAfterRentOverlay(View v){
+        ConstraintLayout after_rent_overlay = findViewById(R.id.after_rent_overlay);
+        after_rent_overlay.setVisibility(View.GONE);
     }
 }
