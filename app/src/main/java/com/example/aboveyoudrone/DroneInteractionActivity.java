@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +20,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -55,11 +57,48 @@ public class DroneInteractionActivity extends AppCompatActivity {
     }
 
     public void follow(View v){
-
+        sendToggleFollow("/drone_follow");
     }
 
     public void stopFollow(View v){
+        sendToggleFollow("/stop_drone_follow");
+    }
 
+    private void sendToggleFollow(String endpoint) {
+        RequestParams params = new RequestParams();
+        params.put("user_id", sharedPrefs.getString("current_user_id", ""));
+        params.put("drone_id", sharedPrefs.getString("current_drone_id", ""));
+        ServerRequestClient.post(endpoint, params, new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                try {
+                    String status = response.getString("status");
+                    String message = response.getString("message");
+                    if (status.equals("success")) {  // open next Activity on success
+                        Toast.makeText(DroneInteractionActivity.this, message, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(DroneInteractionActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                super.onFailure(statusCode, headers, throwable, errorResponse);
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONArray errorResponse) {
+                super.onFailure(statusCode, headers, throwable, errorResponse);
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                super.onFailure(statusCode, headers, responseString, throwable);
+            }
+        });
     }
 
     public void stopRental(View v){

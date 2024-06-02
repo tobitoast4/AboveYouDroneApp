@@ -324,7 +324,9 @@ public class MainActivity extends AppCompatActivity implements
             after_rent_overlay_duration.setText("" + duration + " min");
             TextView after_rent_overlay_price = findViewById(R.id.after_rent_overlay_price);
             after_rent_overlay_price.setText("" + price_to_pay + " €");
-
+            
+            ImageView button_current_rental = findViewById(R.id.button_current_rental);
+            button_current_rental.setVisibility(View.GONE);
             ConstraintLayout after_rent_overlay = findViewById(R.id.after_rent_overlay);
             after_rent_overlay.setVisibility(View.VISIBLE);
         }
