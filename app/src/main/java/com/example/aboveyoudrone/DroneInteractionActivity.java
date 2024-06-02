@@ -4,7 +4,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -17,15 +19,19 @@ import androidx.core.view.WindowInsetsCompat;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Calendar;
 
 import cz.msebera.android.httpclient.Header;
 
 public class DroneInteractionActivity extends AppCompatActivity {
 
     private SharedPreferences sharedPrefs;
+    private TextView textView_time_passed;
+    private long timestamp_rental_started;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,6 +43,11 @@ public class DroneInteractionActivity extends AppCompatActivity {
             return insets;
         });
         sharedPrefs = getSharedPreferences("settings", Context.MODE_PRIVATE);
+        timestamp_rental_started = sharedPrefs.getLong("current_user_id", -1);
+        textView_time_passed = findViewById(R.id.textView_time_passed);
+
+        BackgroundThread thread = new BackgroundThread();
+        thread.start();
     }
 
     public void panicButton(View v){
@@ -63,6 +74,9 @@ public class DroneInteractionActivity extends AppCompatActivity {
                 try {
                     String status = response.getString("status");
                     if (status.equals("success")) {  // open next Activity on success
+                        sharedPrefs.edit().putString("current_drone_id", null).apply();
+                        sharedPrefs.edit().putLong("timestamp_rental_started", -1).apply();
+
                         double timestamp_rental_started = response.getDouble("timestamp_rental_started");
                         double timestamp_rental_ended = response.getDouble("timestamp_rental_ended");
                         double price_to_pay = response.getDouble("price_to_pay");
@@ -87,5 +101,45 @@ public class DroneInteractionActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    class BackgroundThread extends Thread{
+
+        @Override
+        public void run() {
+            refresh();
+        }
+
+        public void refresh(){
+            while (true) {
+                long unixTime = System.currentTimeMillis() / 1000L;
+                long time_difference = unixTime - timestamp_rental_started;
+                int seconds = (int) (time_difference % 60);
+                time_difference = time_difference - seconds;
+                int minutes = (int) ((time_difference % 3600) / 60);
+                time_difference = time_difference - minutes;
+                int hours = (int) (time_difference / 3600);
+
+                String timestamp;
+                if (hours > 0) {
+                    timestamp = "" + String.format("%02d", hours) + ":" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                } else {
+                    timestamp = "" + String.format("%02d", minutes) + ":" + String.format("%02d", seconds);
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        textView_time_passed.setText(timestamp);
+                    }
+                });
+
+                // Refresh the TextView every 1 second
+                try {
+                    sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 }

@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity implements
         // In the sharedPrefs we want to store:
         //  current_user_id (String)
         //  current_drone_id (String)
+        //  timestamp_rental_started (long)
 
         if (sharedPrefs.getString("current_user_id", "").equals("")) {
             sharedPrefs.edit().putString("current_user_id", "myUserId").apply();
@@ -100,6 +101,8 @@ public class MainActivity extends AppCompatActivity implements
                 try {
                     String status = response.getString("status");
                     if (status.equals("success")) {  // open next Activity on success
+                        long timestamp_rental_started = response.getLong("timestamp_rental_started");
+                        sharedPrefs.edit().putLong("timestamp_rental_started", timestamp_rental_started).apply();
                         openIdentificationActivity();
                     } else {
                         String message = response.getString("message");
