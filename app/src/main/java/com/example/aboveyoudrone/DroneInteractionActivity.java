@@ -43,7 +43,7 @@ public class DroneInteractionActivity extends AppCompatActivity {
             return insets;
         });
         sharedPrefs = getSharedPreferences("settings", Context.MODE_PRIVATE);
-        timestamp_rental_started = sharedPrefs.getLong("current_user_id", -1);
+        timestamp_rental_started = sharedPrefs.getLong("timestamp_rental_started", -1);
         textView_time_passed = findViewById(R.id.textView_time_passed);
 
         BackgroundThread thread = new BackgroundThread();

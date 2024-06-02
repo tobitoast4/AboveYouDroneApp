@@ -11,6 +11,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -86,6 +87,29 @@ public class MainActivity extends AppCompatActivity implements
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         enableMyLocation();
+
+        RequestParams params = new RequestParams();
+        params.put("user_id", sharedPrefs.getString("current_user_id", ""));
+        ServerRequestClient.post("/get_rental", params, new JsonHttpResponseHandler(){
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                try {
+                    String active_rental = response.getString("active_rental");
+                    if (active_rental.equals("yes")) {
+                        String drone_id = response.getString("drone_id");
+                        sharedPrefs.edit().putString("current_drone_id", drone_id).apply();
+                        long timestamp_rental_started = response.getLong("timestamp_rental_started");
+                        sharedPrefs.edit().putLong("timestamp_rental_started", timestamp_rental_started).apply();
+
+                        ImageView button_current_rental = findViewById(R.id.button_current_rental);
+                        button_current_rental.setVisibility(View.VISIBLE);
+                    }
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     public void rentDrone(View v) throws JSONException {
@@ -114,6 +138,11 @@ public class MainActivity extends AppCompatActivity implements
                 connect_to_drone_loading.setVisibility(View.GONE);
             }
         });
+    }
+
+    public void openDroneInteractionActivity(View v) {
+        Intent intent = new Intent(this, DroneInteractionActivity.class);
+        startActivity(intent);
     }
 
     private void openIdentificationActivity() {
@@ -285,7 +314,6 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onNewIntent(Intent intent) {
         Bundle bundle = intent.getExtras();
-        Toast.makeText(this, "" + bundle, Toast.LENGTH_SHORT).show();
         if(bundle != null){
             int timestamp_rental_started = (int) bundle.getDouble("timestamp_rental_started");
             int timestamp_rental_ended = (int) bundle.getDouble("timestamp_rental_ended");
