@@ -24,7 +24,10 @@ import com.loopj.android.http.RequestParams;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
+
 import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.entity.StringEntity;
 
 public class IdentificationActivity extends AppCompatActivity {
 
@@ -43,13 +46,19 @@ public class IdentificationActivity extends AppCompatActivity {
     }
 
     public void takeSnapshot(View v){
-        RequestParams params = new RequestParams();
-        params.put("user_id", sharedPrefs.getString("current_user_id", ""));
-        params.put("drone_id", sharedPrefs.getString("current_drone_id", ""));
+        JSONObject jsonParams = new JSONObject();
+        StringEntity jsonParamsAsString;
+        try {
+            jsonParams.put("user_id", sharedPrefs.getString("current_user_id", ""));
+            jsonParams.put("drone_id", sharedPrefs.getString("current_drone_id", ""));
+            jsonParamsAsString = new StringEntity(jsonParams.toString());
+        } catch (UnsupportedEncodingException | JSONException e) {
+            throw new RuntimeException(e);
+        }
 
         ConstraintLayout image_loading = findViewById(R.id.image_loading);
         image_loading.setVisibility(View.VISIBLE);
-        ServerRequestClient.post("/take_snapshot", params, new AsyncHttpResponseHandler() {
+        ServerRequestClient.post(getApplicationContext(), "/take_snapshot", jsonParamsAsString, new AsyncHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 Bitmap bmp = BitmapFactory.decodeByteArray(responseBody, 0, responseBody.length);
@@ -71,10 +80,17 @@ public class IdentificationActivity extends AppCompatActivity {
     }
 
     public void confirmSnapshot(View v){
-        RequestParams params = new RequestParams();
-        params.put("user_id", sharedPrefs.getString("current_user_id", ""));
-        params.put("image_hash", "");
-        ServerRequestClient.post("/confirm_snapshot", params, new JsonHttpResponseHandler() {
+        JSONObject jsonParams = new JSONObject();
+        StringEntity jsonParamsAsString;
+        try {
+            jsonParams.put("user_id", sharedPrefs.getString("current_user_id", ""));
+            jsonParams.put("image_hash", "");
+            jsonParamsAsString = new StringEntity(jsonParams.toString());
+        } catch (UnsupportedEncodingException | JSONException e) {
+            throw new RuntimeException(e);
+        }
+
+        ServerRequestClient.post(getApplicationContext(), "/confirm_snapshot", jsonParamsAsString, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 try {
