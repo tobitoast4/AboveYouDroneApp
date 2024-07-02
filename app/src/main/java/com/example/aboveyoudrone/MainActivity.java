@@ -143,9 +143,15 @@ public class MainActivity extends AppCompatActivity implements
                 try {
                     String status = response.getString("status");
                     if (status.equals("success")) {  // open next Activity on success
-                        long timestamp_rental_started = response.getLong("timestamp_rental_started");
+                        // long timestamp_rental_started = response.getLong("timestamp_rental_started");
+                        // long timestamp_rental_started = response.getLong("timestamp_rental_started");
+                        long timestamp_diff = response.getLong("timestamp_diff");
+                        long currentUnixTime = System.currentTimeMillis() / 1000L;
+                        long timestamp_rental_started = currentUnixTime + timestamp_diff;
                         sharedPrefs.edit().putLong("timestamp_rental_started", timestamp_rental_started).apply();
-                        openIdentificationActivity();
+                        ImageView button_current_rental = findViewById(R.id.button_current_rental);
+                        button_current_rental.setVisibility(View.VISIBLE);
+                        openDroneInteractionActivity(null);
                     } else {
                         String message = response.getString("message");
                         Toast.makeText(MainActivity.this, "Rental failed: " + message, Toast.LENGTH_SHORT).show();
